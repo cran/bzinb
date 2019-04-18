@@ -13,6 +13,8 @@
 #' @param nonzero.prop logical. If \code{TRUE}, proportion of nonzero for each of the pair is returned.
 #' @param fullParam logical. If \code{TRUE}, estimates of all parameters are returned.
 #' @param showFlag logical. If \code{TRUE}, for each pair, the estimates are printed out.
+#' @param nsample positive integer. If provided, \code{nsample} random pairs will only be considered for 
+#' correlation. A non-integer will be rounded to the nearest integer.
 #' @param ... Other arguments passed on to \code{bzinb} function.
 #' 
 #' @return a table of pairwise underlying correlation (\eqn{\rho}) and related statistics.
@@ -55,7 +57,7 @@
 #' @export
 #' 
 pairwise.bzinb <- function(data, nonzero.prop = TRUE, fullParam = FALSE, 
-                         showFlag = FALSE, ...) {
+                         showFlag = FALSE, nsample = NULL, ...) {
   # data: a dataframe of which pairs are to be analyzed. rows = genes, cols = sample
   # nonzero.prop: include nonzero proportion in the result
   if (is.data.frame(data)) {
@@ -65,6 +67,11 @@ pairwise.bzinb <- function(data, nonzero.prop = TRUE, fullParam = FALSE,
   }
   if(!all(is.finite(data))) {stop("All elements in data must be finite and non-NA.")}
   if(any(data < 0)) {stop("All elements in data must be non-negative")}
+  if (!is.null(nsample)) { 
+    if (!is.numeric(nsample)) stop("nsample must be numeric, if it is not NULL.")
+    nsample = round(nsample, 0)
+    if (nsample < 1) stop("nsample must be greater than or equal to 1.")
+  }
   
   dim.p <- dim(data)[1]
   comb <- expand.grid(1:dim.p, 1:dim.p)
@@ -72,6 +79,16 @@ pairwise.bzinb <- function(data, nonzero.prop = TRUE, fullParam = FALSE,
   comb <- data.frame(comb[rw, c(2,1)])
   comb$pair <- apply(comb, 1, function(x) paste(x, collapse = "-"))
   names(comb) <- c(1, 2, "pair")
+  
+  if (!is.null(nsample)) {
+    if (nsample >= dim(comb)[1]) {
+      warning("nsample is greater than the number of all possible pairs. No sampling is done.")
+    } else {
+      # random sampling nsample out of total number of pairs
+      samp = sample(seq(dim(comb)[1]), nsample)
+      comb = comb[samp, ]
+    }
+  } 
   
   MLE <- apply(comb[,1:2], 1, function(s) {
     # if (s[1] <= 6 | s[2] <=23) {return(data.frame(matrix(NA,1,4)))} # debug #7,24 has problem
@@ -81,7 +98,7 @@ pairwise.bzinb <- function(data, nonzero.prop = TRUE, fullParam = FALSE,
     
     if (showFlag) message("pair ", s[1], "-", s[2], ": ", "(rho, se.rho) = (", 
                           formatC(result$rho[1,1], digits = 5, format = "f", flag = "0"), ", ", 
-                          formatC(result$rho[1,2], digits = 5, format = "f", flag = "0"), ")\n")
+                          formatC(result$rho[1,2], digits = 5, format = "f", flag = "0"), ")")
     result2 <- c(rho = result$rho["rho", "Estimate"], 
                  se.rho = result$rho["rho", "Std.err"],
                  if (fullParam) result$coefficients[, "Estimate"],  

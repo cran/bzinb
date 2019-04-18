@@ -198,6 +198,7 @@ bzinb.base <- function (xvec, yvec, initial = NULL, tol = 1e-8, maxiter=50000, s
   xy.reduced$freq <- as.numeric(as.character(xy.reduced$freq))
   n <- sum(xy.reduced$freq)
   n.reduced <- as.integer(length(xy.reduced$freq))
+  
 
   if (max(xvec)==0 & max(yvec)==0) {return(c(rep(1e-10,5),1,0,0,0, 0, 1, 0, if (se) {rep(NA, 11)}))} # 9 params, lik, iter, pureCor, and 11 se's
   info <- if (se) {matrix(0, ncol = 8, nrow = 8, dimnames = list(abp.names[-9], abp.names[-9]))} else {0}
@@ -229,7 +230,7 @@ bzinb.base <- function (xvec, yvec, initial = NULL, tol = 1e-8, maxiter=50000, s
   param = initial
   lik = -Inf
   expt = setNames(as.double(rep(0, 12)), expt.names)
-  lik.vec = rep(0, maxiter)
+  lik.vec = rep(0, maxiter + 1)
   nonconv = 0L
   
   em(param2 = param, xvec = xy.reduced$x, yvec = xy.reduced$y, 

@@ -16,11 +16,6 @@ dbnb <- function(x, y, a0, a1, a2, b1, b2, log=FALSE) {
   l4 <- log(l4) - (+x+y+a0)*log(1 + b1 + b2) + x * log(b1) + y * log(b2) - a1*log(1+b1) - a2*log(1+b2)  + adj
   return(ifelse(log, l4, exp(l4)))
 }
-if (FALSE) {
-  dbnb(1,1,1,1,1,1,2) ; dbnb(1,1,1,1,1,1,1); dbnb(1,1,1,1,1,1)
-  tmp <- sapply(0:50, function(r) sapply(0:50, function(s) dbnb(s,r,1,1,1,1,.5)))
-  sum(tmp) #1
-}
 dbnb.vec <- Vectorize(dbnb)
 
 

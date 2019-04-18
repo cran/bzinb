@@ -19,9 +19,9 @@ using namespace Rcpp;
 
 // 2. optimization
 // [[Rcpp::export]]
-long double inv_digamma(long double x, long double y) 
+double inv_digamma(double x, double y) 
 { 
-  long double h = (boost::math::digamma(x) - y) / boost::math::trigamma(x);
+  double h = (boost::math::digamma(x) - y) / boost::math::trigamma(x);
   while (fabs(h) >= EPSILON1)
   {
     h = (boost::math::digamma(x) - y) / boost::math::trigamma(x);
@@ -45,30 +45,30 @@ long double inv_digamma(long double x, long double y)
 // optimization
 
 
-void inv_digamma_vec(long double lb[1], NumericVector &expt, long double a[3], long double idgam[3]) 
+void inv_digamma_vec(double lb[1], NumericVector &expt, double a[3], double idgam[3]) 
 { 
-  //long double idgam[3];
-  //long double *idgam = new long double[3];
+  //double idgam[3];
+  //double *idgam = new double[3];
   idgam[0] = inv_digamma(a[0], expt[4] - lb[0]);
   idgam[1] = inv_digamma(a[1], expt[5] - lb[0]);
   idgam[2] = inv_digamma(a[2], expt[6] - lb[0]);
   //return(idgam);
 }
 
-// long double objective(long double lb, NumericVector &expt, NumericVector &a, NumericVector &idgam) 
+// double objective(double lb, NumericVector &expt, NumericVector &a, NumericVector &idgam) 
 // { 
 //   inv_digamma_vec(lb, expt, a, idgam);
 //   // Rcout << "idgam123: "<< idgam[0] << " "<< idgam[1] << " "<< idgam[2] << endl;
 //   //  inv_digamma_vec(b1, expt, a, idgam);
-//   // long double result = (long double);
+//   // double result = (double);
 //   return (log(idgam[0] + idgam[1] + idgam[2]) + lb - log(expt[1] + expt[2] + expt[3]));
 // }
 // 
 // // Derivative
-// long double derivFunc(long double lb, NumericVector &expt, NumericVector &a, NumericVector &idgam)
+// double derivFunc(double lb, NumericVector &expt, NumericVector &a, NumericVector &idgam)
 // {
 //   inv_digamma_vec(lb, expt, a, idgam);
-//   long double result = 0.0;
+//   double result = 0.0;
 //   for (int i = 0; i < 3; i++) {
 //     result += 1/ boost::math::trigamma(idgam[i]);
 //   }
@@ -76,11 +76,11 @@ void inv_digamma_vec(long double lb[1], NumericVector &expt, long double a[3], l
 // }
 
 // Derivative
-long double hfunc(long double lb[1], NumericVector &expt, long double a[3], long double idgam[3])
+double hfunc(double lb[1], NumericVector &expt, double a[3], double idgam[3])
 {
   inv_digamma_vec(lb, expt, a, idgam);
-  long double result = 0.0;
-  long double obj = (log(idgam[0] + idgam[1] + idgam[2]) + lb[0] - log(expt[1] + expt[2] + expt[3]));
+  double result = 0.0;
+  double obj = (log(idgam[0] + idgam[1] + idgam[2]) + lb[0] - log(expt[1] + expt[2] + expt[3]));
 #ifdef DEBUG 
   Rcout << "objective = " << obj << " ";
 #endif
@@ -93,12 +93,12 @@ long double hfunc(long double lb[1], NumericVector &expt, long double a[3], long
   return (result);
 }
 
-void opt_lb(long double lb[1], NumericVector &expt, long double a[3], long double idgam[3])
+void opt_lb(double lb[1], NumericVector &expt, double a[3], double idgam[3])
 {
   int i = 1;
-  //long double* lb = log(b1);
-  // long double h =  objective(lb, expt, a, idgam) / derivFunc(lb, expt, a, idgam);
-  long double h = hfunc(lb, expt, a, idgam);
+  //double* lb = log(b1);
+  // double h =  objective(lb, expt, a, idgam) / derivFunc(lb, expt, a, idgam);
+  double h = hfunc(lb, expt, a, idgam);
   // if (debug) {Rcout << "h = " << h << " ";}
 #ifdef DEBUG 
   Rcout << "h = " << h << " ";
@@ -129,7 +129,7 @@ void opt_lb(long double lb[1], NumericVector &expt, long double a[3], long doubl
   
 // if (debug) {Rcout << "lb =" << lb  << ", b1 = " << exp(lb) << endl;}
 // if (debug) {Rcout << "lb =" << lb  << endl;}
-  // long double* idgam = inv_digamma_vec(lb, expt, a);
+  // double* idgam = inv_digamma_vec(lb, expt, a);
   a[0] = idgam[0];
   a[1] = idgam[1];
   a[2] = idgam[2];

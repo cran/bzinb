@@ -15,16 +15,16 @@ using namespace Rcpp;
 
 // 3. EM
 // [[Rcpp::export]]
-void em(NumericVector& param2, const IntegerVector &xvec, const IntegerVector &yvec, 
-        const IntegerVector &freq, const int &n, NumericVector &expt, NumericVector &info,
-        const int &se, IntegerVector &iter, int &maxiter, double &tol, int showFlag,
+void em(NumericVector& param2, IntegerVector &xvec, IntegerVector &yvec, 
+        IntegerVector &freq, int &n, NumericVector &expt, NumericVector &info,
+        int &se, IntegerVector &iter, int &maxiter, double &tol, int showFlag,
         IntegerVector &nonconv, NumericVector& trajectory)
 {
-  long double param[9];
+  double param[9];
   double param_diff = 1.0;
-  long double param_old[9];
-  long double idgam[3];
-  long double lb[1];
+  double param_old[9];
+  double idgam[3];
+  double lb[1];
   NumericVector s_i(8, 0.0);
   iter[0] = 1;
   nonconv[0] = 0;
@@ -35,7 +35,7 @@ void em(NumericVector& param2, const IntegerVector &xvec, const IntegerVector &y
   double expt_max[12];
   
   for (int i = 0; i < 9; i++) {
-    param[i] = (long double) param2[i];  //initializing param2 with param
+    param[i] = (double) param2[i];  //initializing param2 with param
   }
   
   //cout << "maxiter = " << maxiter << " iter = " << iter[0] << endl;  
@@ -97,7 +97,7 @@ void em(NumericVector& param2, const IntegerVector &xvec, const IntegerVector &y
   Rcout << ", after opt_lb! (of iter" << iter << ") "<< endl;
 #endif
     //if (iter[0] > 2058) {cout << "before opt_lb" << endl;}
-    long double delta = expt[11]*1.0 / (expt[1] + expt[3]);
+    double delta = expt[11]*1.0 / (expt[1] + expt[3]);
     param[3] = exp(lb[0]);
     param[4] = param[3] * delta;
     
