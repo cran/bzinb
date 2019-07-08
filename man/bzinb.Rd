@@ -78,7 +78,7 @@ the maximum likelihood.
 \examples{
 # generating a pair of random vectors
 set.seed(2)
-data1 <- rbzinb(n = 20, a0 = 1, a1 = 1, a2 = 1, 
+data1 <- rbzinb(n = 100, a0 = 2, a1 = 1, a2 = 1, 
                 b1 = 1, b2 = 1, p1 = 0.5, p2 = 0.2, 
                 p3 = 0.2, p4 = 0.1)
 

@@ -17,6 +17,94 @@ dbzinb <- function(x, y, a0, a1, a2, b1, b2, p1, p2, p3, p4, log=FALSE) {
 }
 dbzinb.vec <- Vectorize(dbzinb)
 
+# weight of nondropout
+wbzinb.i <- function(x, y, a0, a1, a2, b1, b2, p1, p2, p3, p4, param = NULL) {
+  if (!is.null(param)) {
+    if (length(param) != 9) stop("length(param) must be 9.")
+    a0 = param[1]; a1 = param[2]; a2 = param[3]; b1 = param[4]; b2 = param[5]
+    p1 = param[6]; p2 = param[7]; p3 = param[8]; p4 = param[9]
+  }
+  
+  dxy <- dbnb(x=x, y=y, a0=a0, a1=a1, a2=a2, b1=b1, b2=b2, log=FALSE)
+  dx <- dnbinom(x=x, a0+a1, 1/(1+b1))
+  dy <- dnbinom(x=y, a0+a2, 1/(1+b2))
+  result <- dxy * p1 + dx * ifelse(y==0,p2,0) + dy * ifelse(x==0,p3,0) + ifelse(x+y==0,p4,0)
+  return(dxy * p1 / result)
+}
+wbzinb <- Vectorize(wbzinb.i, vectorize.args = c("x", "y"))
+
+weighted.cor.base <- function(xvec, yvec, weight) {
+  Exy = weighted.mean(xvec * yvec, w = weight)
+  Exx = weighted.mean(xvec * xvec, w = weight)
+  Eyy = weighted.mean(yvec * yvec, w = weight)
+  Ex = weighted.mean(xvec, w = weight)
+  Ey = weighted.mean(yvec, w = weight)
+  cor = (Exy - Ex * Ey) / sqrt((Exx - Ex^2) * (Eyy - Ey^2))
+  return(cor)
+}
+
+#' @rdname weighted.pc
+#' @name weighted.pc
+#' 
+#' @title Weighted Pearson Correlation (WPC) based on bivariate zero-inflated 
+#' negative binomial (BZINB) model
+#' 
+#' @description weighted.pc calculates Pearson's correlation with less weights for pairs 
+#' containing zero(s). The weights are determined by BZINB model.
+#'  
+#' @param xvec,yvec a pair of bzinb random vectors. nonnegative integer vectors. 
+#'    If not integers, they will be rounded to the nearest integers.
+#' @param param a vector of parameters (\code{(a0, a1, a2, b1, b2, p1, p2, p3, p4)}). 
+#'    See \code{bzinb} for details.
+#'    If \code{param} is \code{null}, it will be estimated by \code{bzinb()}.
+#' @param ... optional arguments used passed to \code{bzinb}, when \code{param} is \code{null}.
+#' 
+#' @return weighted Pearson correlation (WPC) estimate
+#' 
+#' @examples
+#' # generating a pair of random vectors
+#' set.seed(2)
+#' data1 <- rbzinb(n = 20, a0 = 1, a1 = 1, a2 = 1, 
+#'                 b1 = 1, b2 = 1, p1 = 0.5, p2 = 0.2, 
+#'                 p3 = 0.2, p4 = 0.1)
+#' 
+#' weighted.pc(xvec = data1[,1], yvec = data1[,2], 
+#'             param = c(0.769, 0.041, 0.075, 3.225, 1.902, 0.5, 0.084, 1e-20, 0.416))
+#' weighted.pc(xvec = data1[,1], yvec = data1[,2])
+#' 
+#' @author Hunyong Cho, Chuwen Liu, Jinyoung Park, and Di Wu
+#' @references
+#'  Cho, H., Preisser, J., Liu, C., and Wu, D. (In preparation), "A bivariate 
+#'  zero-inflated negative binomial model for identifying underlying dependence"
+#'  
+#' @import Rcpp
+#' @export
+#' @useDynLib bzinb
+#' 
+weighted.pc <- function(xvec, yvec, param = NULL, ...) {
+  .check.input(xvec, yvec)
+  
+  if (!is.null(param)) {
+    if (length(param) != 9) stop("length(param) must be 9.")
+    .check.ab(param[1:5])
+    .check.p(param[6:9])
+  } else {
+    bzinb.out = bzinb(xvec = xvec, yvec = yvec) 
+    param = bzinb.out$coefficients[, 1]
+  }
+  
+  xy.reduced <- as.data.frame(table(xvec,yvec))
+  names(xy.reduced) <- c("x", "y","freq")
+  xy.reduced <- xy.reduced[xy.reduced$freq != 0,]
+  xy.reduced$x <- as.numeric(as.character(xy.reduced$x))
+  xy.reduced$y <- as.numeric(as.character(xy.reduced$y))
+  xy.reduced$freq <- as.numeric(as.character(xy.reduced$freq))
+  
+  weight = wbzinb(xy.reduced$x, xy.reduced$y, param = param)
+  wcor = weighted.cor.base(xy.reduced$x, xy.reduced$y, weight = xy.reduced$freq * weight)
+  wcor
+}
+
 #' @rdname bzinb
 #' @name bzinb
 #' @aliases rbzinb
@@ -79,7 +167,7 @@ dbzinb.vec <- Vectorize(dbzinb)
 #' @examples
 #' # generating a pair of random vectors
 #' set.seed(2)
-#' data1 <- rbzinb(n = 20, a0 = 1, a1 = 1, a2 = 1, 
+#' data1 <- rbzinb(n = 100, a0 = 2, a1 = 1, a2 = 1, 
 #'                 b1 = 1, b2 = 1, p1 = 0.5, p2 = 0.2, 
 #'                 p3 = 0.2, p4 = 0.1)
 #' 
@@ -188,7 +276,8 @@ trueCor <- function(a0, a1, a2, b1, b2) a0 * sqrt(b1 * b2 /(b1+1) /(b2+1) /(a0 +
 abp.names <- c("a0", "a1", "a2", "b1", "b2", "p1", "p2", "p3", "p4") # global variable
 expt.names <- c("lik", "ER0", "ER1", "ER2", "ElogR0", "ElogR1", "ElogR2", "EE1", "EE2", "EE3", "EE4", "EV")
 
-bzinb.base <- function (xvec, yvec, initial = NULL, tol = 1e-8, maxiter=50000, showFlag=FALSE, vcov = FALSE) {
+bzinb.base <- function (xvec, yvec, initial = NULL, tol = 1e-8, maxiter=50000, showFlag=FALSE, vcov = FALSE,
+                        bnb = 0) {
   se = TRUE  # se is estimated by default
   xy.reduced <- as.data.frame(table(xvec,yvec))
   names(xy.reduced) <- c("x", "y","freq")
@@ -226,19 +315,28 @@ bzinb.base <- function (xvec, yvec, initial = NULL, tol = 1e-8, maxiter=50000, s
     names(initial) <- abp.names
   }
   ## tmp.initial <<- initial
-  iter = 0L
   param = initial
   lik = -Inf
-  expt = setNames(as.double(rep(0, 12)), expt.names)
   lik.vec = rep(0, maxiter + 1)
   nonconv = 0L
+
+  em.out <- em(param2 = param, xvec = xy.reduced$x, yvec = xy.reduced$y, 
+       freq = xy.reduced$freq, n = n.reduced, se = as.integer(se), 
+       maxiter = as.integer(maxiter), tol = as.double(tol), 
+       showFlag = as.integer(showFlag), bnb = bnb)
+  names(em.out) <- c("param2",              # "xvec", "yvec", "freq", "n", 
+                     "expt", "info",        # "se", 
+                     "iter",                # "maxiter", "tol", "showFlag", 
+                     "nonconv", "trajectory") # , "bnb")
   
-  em(param2 = param, xvec = xy.reduced$x, yvec = xy.reduced$y, 
-     freq = xy.reduced$freq, n = n.reduced, expt = expt, info = info,
-     se = as.integer(se), iter = as.integer(iter), 
-     maxiter = as.integer(maxiter), tol = as.double(tol), 
-     showFlag = as.integer(showFlag), nonconv = nonconv, 
-     trajectory = lik.vec)
+  # overwriting the original object
+  param = setNames(em.out$param2, abp.names)
+  expt  = setNames(em.out$expt, expt.names)
+  info = if (se) {matrix(em.out$info, 8, 8, 
+                         dimnames = list(abp.names[-9], abp.names[-9]))} else 0
+  iter  = em.out$iter
+  nonconv = em.out$nonconv
+  trajectory = em.out$trajectory
   
   if (nonconv == 1) warning("The iteration exited before reaching convergence.")
   
@@ -249,24 +347,30 @@ bzinb.base <- function (xvec, yvec, initial = NULL, tol = 1e-8, maxiter=50000, s
     sqrt(param[4] * param[5] /(param[4] + 1) /(param[5] + 1))
   logit.rho <- qlogis(rho)
   
+  if (bnb) {info = info[1:5, 1:5]}
+  
   if (se) {
+    par.names <- if (bnb) {abp.names[1:5]} else {abp.names}
+    dim.std <- if (bnb) {7} else {11}
+    fullrank <- if (bnb) {5} else {8}
+    
     qr.info <- try(qr(info))
     if (class(qr.info) == "try-error") {
       warning ("The information matrix has NA/NaN/Inf and thus the standard error is not properly estimatd.")
-      std.param = setNames(rep(NA, 11), c(abp.names, "rho", "logit.rho"))
+      std.param = setNames(rep(NA, dim.std), c(par.names, "rho", "logit.rho"))
       cov.mat <- NA
-    } else if (qr(info)$rank < 8) {
+    } else if (qr(info)$rank < fullrank) {
       warning ("The information matrix is (essentially) not full rank, and thus the standard error is not reliable.")
-      std.param = setNames(rep(NA, 11), c(abp.names, "rho", "logit.rho"))
+      std.param = setNames(rep(NA, dim.std), c(par.names, "rho", "logit.rho"))
       cov.mat <- NA
     } else {
       cov.mat <- try(solve(info))
       if (class(cov.mat) == "try-error") {
-        std.param = setNames(rep(NA, 11), c(abp.names, "rho", "logit.rho"))
+        std.param = setNames(rep(NA, dim.std), c(par.names, "rho", "logit.rho"))
         cov.mat <- NA
       } else {
         # variance of p4 hat
-        var.p4 <- sum (cov.mat[6:8, 6:8]) # = sum_i,j cov(pi, pj)
+        if (!bnb) var.p4 <- sum (cov.mat[6:8, 6:8]) # = sum_i,j cov(pi, pj)
         
         # variance of rho hat
         # rho <- a0/sqrt((a0 + a1) * (a0 + a2)) *sqrt(b1 *b2 /(b1 + 1) /(b2 + 1))
@@ -285,8 +389,13 @@ bzinb.base <- function (xvec, yvec, initial = NULL, tol = 1e-8, maxiter=50000, s
         var.logit.rho <- var.rho / rho^2 / (1-rho)^2
         # std.param = sqrt(c(setNames(diag(cov.mat), abp.names[1:8]), 
         #                    p4 = var.p4, rho=var.rho, logit.rho = var.logit.rho))
-        std.param = sqrt(c(diag(cov.mat), 
-                           p4 = var.p4, rho=var.rho, logit.rho = var.logit.rho))
+        if (!bnb) {
+          std.param = sqrt(c(diag(cov.mat), 
+                 p4 = var.p4, rho=var.rho, logit.rho = var.logit.rho))
+        } else {
+          std.param = sqrt(c(diag(cov.mat), rho=var.rho, logit.rho = var.logit.rho))
+        }
+        
       }
     } 
     
@@ -454,7 +563,7 @@ bzinb.se <- function(xvec, yvec, a0, a1, a2, b1, b2, p1, p2, p3, p4,
   dBvZINB_Expt_vec (xvec = xy.reduced$x, yvec = xy.reduced$y, freq = xy.reduced$freq, n = n.reduced, 
                     a0 = param[1], a1 = param[2], a2 = param[3], b1 = param[4], b2 = param[5], 
                     p1 = param[6], p2 = param[7], p3 = param[8], p4 = param[9], 
-                    expt = expt, s_i = s_i, info = info, se = 1)
+                    expt = expt, s_i = s_i, info = info, se = 1, bnb = 1)
   
   
   # inverse of info

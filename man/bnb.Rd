@@ -10,7 +10,8 @@ lik.bnb(xvec, yvec, a0, a1, a2, b1, b2, param = NULL)
 
 rbnb(n, a0, a1, a2, b1, b2, param = NULL)
 
-bnb(xvec, yvec, tol = 1e-08, showFlag = FALSE)
+bnb(xvec, yvec, em = TRUE, tol = 1e-08, maxiter = 50000,
+  vcov = TRUE, initial = NULL, showFlag = FALSE)
 }
 \arguments{
 \item{xvec, yvec}{a pair of bnb random vectors. nonnegative integer vectors. 
@@ -26,18 +27,16 @@ need to be provided.}
 
 \item{n}{number of observations.}
 
-\item{tol}{tolerance for judging convergence. \code{tol = 1e-8} by default.}
+\item{em}{if \code{TRUE} in \code{bnb}, EM algorithm is applied. Otherwise, direct opitmation is used.}
 
-\item{showFlag}{if \code{TRUE}, the updated parameter estimates for each iteration 
-are printed out. If a positive integer, the updated parameter estimates for 
-iterations greater than \code{showFlag} are printed out.}
+\item{tol, maxiter, vcov, initial, showFlag}{optional arguments applied only when \code{em} is \code{TRUE} in \code{bnb}.}
 }
 \value{
 \itemize{
    \item \code{rbnb} gives a pair of random vectors following BNB distribution.
-   \item \code{bnb} gives the maximum likelihood estimates of a BNB pair.
+   \item \code{bnb} gives the maximum likelihood estimates of a BNB pair. 
+   Standard error and covariance matrix are provided when \code{em} is \code{TRUE}.
    \item \code{lik.bnb} gives the log-likelihood of a set of parameters for a BNB pair.
-
  }
 }
 \description{
@@ -48,7 +47,7 @@ random generation (\code{rbnb}), maximum likelihood estimation (\code{bnb}),
 \examples{
 # generating a pair of random vectors
 set.seed(1)
-data1 <- rbnb(n = 20, a0 = 1, a1 = 1, a2 = 1, 
+data1 <- rbnb(n = 100, a0 = 2, a1 = 1, a2 = 1, 
                 b1 = 1, b2 = 1)
 
 lik.bnb(xvec = data1[, 1], yvec = data1[ ,2], 

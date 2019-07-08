@@ -10,24 +10,28 @@
 using namespace std;
 using namespace Rcpp;
 #define ITER_ALLOWANCE 100   // number of iterations allowed after finding the peak
-//#define DEBUG4
-//#define DEBUG5
+// #define DEBUG4
+// #define DEBUG5
+// #define DEBUG7
 
 // 3. EM
 // [[Rcpp::export]]
-void em(NumericVector& param2, IntegerVector &xvec, IntegerVector &yvec, 
-        IntegerVector &freq, int &n, NumericVector &expt, NumericVector &info,
-        int &se, IntegerVector &iter, int &maxiter, double &tol, int showFlag,
-        IntegerVector &nonconv, NumericVector& trajectory)
+List em(NumericVector& param2, IntegerVector &xvec, IntegerVector &yvec, 
+        IntegerVector &freq, int &n, 
+        int &se, int &maxiter, double &tol, int showFlag,
+        int bnb)
 {
-  double param[9];
+  NumericVector param = clone(param2);
   double param_diff = 1.0;
   double param_old[9];
   double idgam[3];
   double lb[1];
+  NumericVector expt(12, 0.0);
   NumericVector s_i(8, 0.0);
-  iter[0] = 1;
-  nonconv[0] = 0;
+  NumericVector info(1 + se * 63L, 0.0);  // if se = 1, 8 x 8 matrix, o/w a scalar zero.
+  IntegerVector iter(1, 1L);
+  IntegerVector nonconv(1, 0L);
+  NumericVector trajectory(maxiter + 1L, 0.0); 
   
   // storage for max_likelihood.
   double param_max[9];
@@ -51,13 +55,17 @@ void em(NumericVector& param2, IntegerVector &xvec, IntegerVector &yvec,
       // cout << "param [" << i << "] = " << param[i] << " ";
     }
     dBvZINB_Expt_vec(xvec, yvec, freq, n, param[0], param[1], param[2], param[3], param[4], 
-                     param[5], param[6], param[7], param[8], expt, s_i, info, 0);
+                     param[5], param[6], param[7], param[8], expt, s_i, info, 0, bnb);
     
     if ((showFlag > 0) & (iter[0] >= showFlag)) {
       Rcout << "iter " << iter[0]  << " lik " << expt[0] <<
         ", a0 " << param[0] << ", a1 " << param[1] << ", a2 " << param[2] <<
-          ", b1 " << param[3] << ", b2 " << param[4] << ", p1 " << param[5] <<
-            ", p2 " << param[6] << ", p3 " << param[7] << ", p4 " << param[8] << endl;
+          ", b1 " << param[3] << ", b2 " << param[4];
+      if (!bnb) {
+        Rcout << ", p1 " << param[5] << ", p2 " << param[6] << ", p3 " << param[7] << 
+          ", p4 " << param[8];
+      }
+      Rcout << endl;
     }
     
 #ifdef DEBUG4
@@ -86,15 +94,20 @@ void em(NumericVector& param2, IntegerVector &xvec, IntegerVector &yvec,
     {
       if (i == 0) {Rcout << "idgam: ";}
       Rcout << idgam[i] << " ";
-      if (i == 3) {Rcout <<  "lb = " << lb[0]  << endl;}
     }
+    Rcout <<  "lb = " << lb[0]  << endl;
     Rcout << "before opt_lb! (of iter" << iter << ") ";
 #endif
     //if (iter[0] > 2058) {cout << "before opt_lb" << endl;}
+    
     // Finding optimized a0, a1, a2, b1
+#ifdef DEBUG7
+    Rcout << "starting opt_lb. lb = " << lb[0] << endl;
+#endif  
+    // after finding "nice" initial lb, run opt_lb.
     opt_lb(lb, expt, param, idgam);
 #ifdef DEBUG5
-  Rcout << ", after opt_lb! (of iter" << iter << ") "<< endl;
+  Rcout << ", after opt_lb! (of iter" << iter << ") "<< lb[0] << endl;
 #endif
     //if (iter[0] > 2058) {cout << "before opt_lb" << endl;}
     double delta = expt[11]*1.0 / (expt[1] + expt[3]);
@@ -142,12 +155,18 @@ void em(NumericVector& param2, IntegerVector &xvec, IntegerVector &yvec,
 
   if (se == 1) { //updating expt and calculate SE when called for.
     dBvZINB_Expt_vec(xvec, yvec, freq, n, param[0], param[1], param[2], param[3], param[4], 
-                     param[5], param[6], param[7], param[8], expt, s_i, info, se);
+                     param[5], param[6], param[7], param[8], expt, s_i, info, se, bnb);
   }
 
   // cout << "a " << param[0] << " " << param[1] << " " << param[2] << " b " << param[3] << " " << param[4] << " pi "
   //      << param[5] << " " << param[6] << " "  << param[7] << " " << param[8] << endl;
-  for (int i = 0; i < 9; i++) {
-    param2[i] = param[i];  //returning param to param2
-  }
+  // for (int i = 0; i < 9; i++) {
+  //   param2[i] = param[i];  //returning param to param2
+  // }
+  
+  // List z = List::create(param, xvec, yvec, freq, n, expt, info, se, 
+  //                       iter, nonconv, trajectory, bnb);
+  List z = List::create(param, expt, info, iter, nonconv, trajectory);
+  
+  return z;
 }

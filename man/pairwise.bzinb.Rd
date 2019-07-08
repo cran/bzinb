@@ -17,7 +17,8 @@ columns represent the sample. If not integers, rounded to the nearest integers.}
 
 \item{showFlag}{logical. If \code{TRUE}, for each pair, the estimates are printed out.}
 
-\item{nsample}{positive integer. If provided, \code{nsample} random pairs will only be considered for correlation.}
+\item{nsample}{positive integer. If provided, \code{nsample} random pairs will only be considered for 
+correlation. A non-integer will be rounded to the nearest integer.}
 
 \item{...}{Other arguments passed on to \code{bzinb} function.}
 }

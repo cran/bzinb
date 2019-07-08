@@ -9,6 +9,9 @@
 #include <boost/math/special_functions/trigamma.hpp>
 using namespace std;
 using namespace Rcpp;
+//digamma overflows when arg >> 600. So approximate it with log(x - 0.5). See https://en.wikipedia.org/wiki/Digamma_function#Computation_and_approximation
+// digamma(x) is in (log(x - 0.5), log(x)) and is much closer to the left limit.
+#define digamma2(a) (((a) < (600))?(boost::math::digamma(x)):(log(x - 0.5)))
 
 #define EPSILON1 1e-9  //for inverse-gamma
 #define EPSILON2 1e-9  //for M-step
@@ -18,19 +21,21 @@ using namespace Rcpp;
 //bool debug = true;
 
 // 2. optimization
-// [[Rcpp::export]]
-double inv_digamma(double x, double y) 
+double inv_digamma2(double x, double y) 
 { 
-  double h = (boost::math::digamma(x) - y) / boost::math::trigamma(x);
+  double h = (digamma2(x) - y) / boost::math::trigamma(x);
   while (fabs(h) >= EPSILON1)
   {
-    h = (boost::math::digamma(x) - y) / boost::math::trigamma(x);
+    h = (digamma2(x) - y) / boost::math::trigamma(x);
     while (h > x) {
-      #ifdef DEBUG 
+      #ifdef DEBUG6 
         Rcout <<"inv_digamm hit zero:" << h << " ";
       #endif
-      h /= 2.0;
+      h = x/2.0;  // use x/2.0 (bisection)
     }
+// #ifdef DEBUG 
+//   Rcout << "x:" << x << ", y:" << y << ", h:" << h << ", digamma(x): " << digamma2(x) <<  ", tri(x):" << boost::math::trigamma(x) << " " << endl;
+// #endif  
     x = x - h;
   }
   // if (debug) {Rcout << endl << "inv_digamm = " << x << endl;}
@@ -41,17 +46,38 @@ double inv_digamma(double x, double y)
   return(x);
 }
 
+// [[Rcpp::export]]
+double inv_digamma(double x, double y) 
+{ 
+  if (x < 600) {
+    return(inv_digamma2(x, y));
+  } else {
+    return(exp(x + 0.5));
+  }
+}
 
 // optimization
 
 
-void inv_digamma_vec(double lb[1], NumericVector &expt, double a[3], double idgam[3]) 
+void inv_digamma_vec(double lb[1], NumericVector &expt, Rcpp::NumericVector &a, double idgam[3]) 
 { 
   //double idgam[3];
   //double *idgam = new double[3];
+#ifdef DEBUG
+  Rcout << endl<< "idgam[0] start. expt[4] = " << expt[4] << ", lb[0] = " << lb[0] << endl;
+#endif
   idgam[0] = inv_digamma(a[0], expt[4] - lb[0]);
+#ifdef DEBUG
+  Rcout  << endl<< "idgam[0] = " << idgam[0] << endl <<"idgam[1] start. expt[5] = " << expt[5] << ", lb[0] = " << lb[0] << endl;
+#endif
   idgam[1] = inv_digamma(a[1], expt[5] - lb[0]);
+#ifdef DEBUG
+  Rcout  << endl<< "idgam[1] = " << idgam[1] << endl <<"idgam[2] start. expt[6] = " << expt[6] << ", lb[0] = " << lb[0]  << endl;
+#endif
   idgam[2] = inv_digamma(a[2], expt[6] - lb[0]);
+#ifdef DEBUG
+  Rcout  << endl<< "idgam[2] = " << idgam[2] << endl;
+#endif
   //return(idgam);
 }
 
@@ -76,24 +102,47 @@ void inv_digamma_vec(double lb[1], NumericVector &expt, double a[3], double idga
 // }
 
 // Derivative
-double hfunc(double lb[1], NumericVector &expt, double a[3], double idgam[3])
+double hfunc(double lb[1], NumericVector &expt, NumericVector &a, double idgam[3])
 {
-  inv_digamma_vec(lb, expt, a, idgam);
   double result = 0.0;
-  double obj = (log(idgam[0] + idgam[1] + idgam[2]) + lb[0] - log(expt[1] + expt[2] + expt[3]));
-#ifdef DEBUG 
-  Rcout << "objective = " << obj << " ";
-#endif
-  for (int i = 0; i < 3; i++) {
-    // Rcout << "idgam[0:2]" << idgam[0] << " " << idgam[1] << " " << idgam[2] << endl;
-    result += (1/ boost::math::trigamma(idgam[i]));
+  double obj;
+  
+  if (((expt[4] - lb[0] < 600) & (expt[5] - lb[0] < 600)) & (expt[6] - lb[0] < 600)) {
+    // when everything is not large.
+    inv_digamma_vec(lb, expt, a, idgam);
+    obj = (log(idgam[0] + idgam[1] + idgam[2]) + lb[0] - log(expt[1] + expt[2] + expt[3]));
+    
+  #ifdef DEBUG 
+    Rcout << "objective = " << obj << " ";
+  #endif
+    for (int i = 0; i < 3; i++) {
+      // Rcout << "idgam[0:2]" << idgam[0] << " " << idgam[1] << " " << idgam[2] << endl;
+      result += (1/ boost::math::trigamma(idgam[i]));
+    }
+    result = - result / (idgam[0] + idgam[1] + idgam[2]) + 1.0;
+    result = obj / result;
+    return (result);
+  } else {
+    // approximation for large values.
+    // idgam will not be updated.
+    Rcout << "large idgamma activated." << endl;
+    double max_expt = std::max(std::max(expt[4], expt[5]), expt[6]) - 0.5;
+    obj = max_expt + log(exp(expt[4] - max_expt) + exp(expt[5] - max_expt) + exp(expt[6] - max_expt)) -
+      log(expt[1] + expt[2] + expt[3]);
+    
+  #ifdef DEBUG 
+    Rcout << "objective = " << obj << " ";
+    Rcout << "idgam[0:2]" << idgam[0] << " " << idgam[1] << " " << idgam[2] << endl;
+    Rcout << "expt[4:6] - lb = " << expt[4] - lb[0] << " " <<  expt[5] - lb[0] << " " <<  expt[6] - lb[0] << endl;
+  #endif
+    result = obj * ( 1 + 2 * exp(max_expt + 0.5) - lb[0] + 0.5);
+    return (result);
   }
-  result = - result / (idgam[0] + idgam[1] + idgam[2]) + 1.0;
-  result = obj / result;
-  return (result);
+  
+
 }
 
-void opt_lb(double lb[1], NumericVector &expt, double a[3], double idgam[3])
+void opt_lb(double lb[1], NumericVector &expt, NumericVector &a, double idgam[3])
 {
   int i = 1;
   //double* lb = log(b1);
