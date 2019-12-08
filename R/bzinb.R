@@ -355,7 +355,7 @@ bzinb.base <- function (xvec, yvec, initial = NULL, tol = 1e-8, maxiter=50000, s
     fullrank <- if (bnb) {5} else {8}
     
     qr.info <- try(qr(info))
-    if (class(qr.info) == "try-error") {
+    if (class(qr.info)[1] == "try-error") {
       warning ("The information matrix has NA/NaN/Inf and thus the standard error is not properly estimatd.")
       std.param = setNames(rep(NA, dim.std), c(par.names, "rho", "logit.rho"))
       cov.mat <- NA
@@ -365,7 +365,7 @@ bzinb.base <- function (xvec, yvec, initial = NULL, tol = 1e-8, maxiter=50000, s
       cov.mat <- NA
     } else {
       cov.mat <- try(solve(info))
-      if (class(cov.mat) == "try-error") {
+      if (class(cov.mat)[1] == "try-error") {
         std.param = setNames(rep(NA, dim.std), c(par.names, "rho", "logit.rho"))
         cov.mat <- NA
       } else {
@@ -433,7 +433,7 @@ bzinb <- function(xvec, yvec, initial = NULL, tol = 1e-8, maxiter = 50000, showF
   yvec = as.integer(round(yvec, digits = 0))
   result <- try(bzinb.base(xvec, yvec, initial = initial, tol = tol, maxiter = maxiter, 
                            showFlag = showFlag, vcov = vcov))
-  if (class(result)=="try-error") {
+  if (class(result)[1] == "try-error") {
     result <- list(rho = matrix(rep(NA, 4),
                                 ncol = 2, dimnames = list(c("rho", "logit.rho"), c("Estimate", "Std.err"))),
                    coefficients = matrix(rep(NA, 18),
@@ -568,7 +568,7 @@ bzinb.se <- function(xvec, yvec, a0, a1, a2, b1, b2, p1, p2, p3, p4,
   
   # inverse of info
   qr.info <- try(qr(info))
-  if (class(qr.info) == "try-error") {
+  if (class(qr.info)[1] == "try-error") {
     warning ("The information matrix has NA/NaN/Inf and thus the standard error is not properly estimatd.")
     std.param = setNames(rep(NA, 11), c(abp.names, "rho", "logit.rho"))
     cov.mat <- NA
@@ -578,7 +578,7 @@ bzinb.se <- function(xvec, yvec, a0, a1, a2, b1, b2, p1, p2, p3, p4,
     cov.mat <- NA
   } else {
     cov.mat <- try(solve(info))
-    if (class(cov.mat) == "try-error") {
+    if (class(cov.mat)[1] == "try-error") {
       std.param = setNames(rep(NA, 11), c(abp.names, "rho", "logit.rho"))
       cov.mat <- NA
     } else {

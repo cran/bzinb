@@ -201,7 +201,7 @@ bnb <- function (xvec, yvec, em = TRUE, tol = 1e-8, maxiter = 50000, vcov = TRUE
     initial = c(initial, 1, 0, 0, 0)
     result <- try(bzinb.base(xvec, yvec, initial = initial, tol = tol, maxiter = maxiter, 
                              showFlag = showFlag, vcov = vcov, bnb = 1))
-    if (class(result)=="try-error") {
+    if (class(result)[1] == "try-error") {
       result <- list(coefficients = matrix(rep(NA, 10),
                                            ncol = 2, dimnames = list(abp.names[1:5], c("Estimate", "Std.err"))), 
                      lik = NA,
@@ -263,7 +263,7 @@ bnb.direct <- function (xvec, yvec, tol = 1e-8, showFlag=FALSE) {
   initial <- pmax(initial, 1e-5)
   # tmp.initial <<- initial
   result <- try(exp(optim(par = log(initial), fn = fn.log, gr = gr.log, control=list(fnscale=-1, abstol = tol), method = "BFGS")$par), silent=TRUE)
-  if (class(result)=="try-error") {
+  if (class(result)[1] == "try-error") {
     initial = rep(1,5)
     result <- exp(optim(par = log(initial), fn = fn.log, gr = gr.log, control=list(fnscale=-1, abstol = tol), method = "BFGS")$par)
   }
