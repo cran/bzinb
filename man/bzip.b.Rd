@@ -10,8 +10,14 @@ lik.bzip.b(xvec, yvec, m0, m1, m2, p1, p2, p3, p4, param = NULL)
 
 rbzip.b(n, m0, m1, m2, p1, p2, p3, p4, param = NULL)
 
-bzip.b(xvec, yvec, tol = 1e-06, initial = NULL, showFlag = FALSE,
-  maxiter = 200)
+bzip.b(
+  xvec,
+  yvec,
+  tol = 1e-06,
+  initial = NULL,
+  showFlag = FALSE,
+  maxiter = 200
+)
 }
 \arguments{
 \item{xvec, yvec}{a pair of BZIP (B) random vectors. nonnegative integer vectors. 

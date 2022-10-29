@@ -5,8 +5,7 @@
 \title{The bivariate zero-inflated negative binomial distribution 
    - Standard error estimation}
 \usage{
-bzinb.se(xvec, yvec, a0, a1, a2, b1, b2, p1, p2, p3, p4, param = NULL,
-  ...)
+bzinb.se(xvec, yvec, a0, a1, a2, b1, b2, p1, p2, p3, p4, param = NULL, ...)
 }
 \arguments{
 \item{xvec, yvec}{a pair of bzinb random vectors. nonnegative integer vectors. 

@@ -10,8 +10,15 @@ lik.bzinb(xvec, yvec, a0, a1, a2, b1, b2, p1, p2, p3, p4, param = NULL)
 
 rbzinb(n, a0, a1, a2, b1, b2, p1, p2, p3, p4, param = NULL)
 
-bzinb(xvec, yvec, initial = NULL, tol = 1e-08, maxiter = 50000,
-  showFlag = FALSE, vcov = FALSE)
+bzinb(
+  xvec,
+  yvec,
+  initial = NULL,
+  tol = 1e-08,
+  maxiter = 50000,
+  showFlag = FALSE,
+  vcov = FALSE
+)
 }
 \arguments{
 \item{xvec, yvec}{a pair of bzinb random vectors. nonnegative integer vectors. 

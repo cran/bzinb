@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // em
 List em(NumericVector& param2, IntegerVector& xvec, IntegerVector& yvec, IntegerVector& freq, int& n, int& se, int& maxiter, double& tol, int showFlag, int bnb);
 RcppExport SEXP _bzinb_em(SEXP param2SEXP, SEXP xvecSEXP, SEXP yvecSEXP, SEXP freqSEXP, SEXP nSEXP, SEXP seSEXP, SEXP maxiterSEXP, SEXP tolSEXP, SEXP showFlagSEXP, SEXP bnbSEXP) {

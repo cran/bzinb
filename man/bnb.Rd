@@ -10,8 +10,16 @@ lik.bnb(xvec, yvec, a0, a1, a2, b1, b2, param = NULL)
 
 rbnb(n, a0, a1, a2, b1, b2, param = NULL)
 
-bnb(xvec, yvec, em = TRUE, tol = 1e-08, maxiter = 50000,
-  vcov = TRUE, initial = NULL, showFlag = FALSE)
+bnb(
+  xvec,
+  yvec,
+  em = TRUE,
+  tol = 1e-08,
+  maxiter = 50000,
+  vcov = TRUE,
+  initial = NULL,
+  showFlag = FALSE
+)
 }
 \arguments{
 \item{xvec, yvec}{a pair of bnb random vectors. nonnegative integer vectors. 

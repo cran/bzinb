@@ -4,8 +4,14 @@
 \alias{pairwise.bzinb}
 \title{Pairwise underlying correlation based on bivariate zero-inflated negative binomial (BZINB) model}
 \usage{
-pairwise.bzinb(data, nonzero.prop = TRUE, fullParam = FALSE,
-  showFlag = FALSE, nsample = NULL, ...)
+pairwise.bzinb(
+  data,
+  nonzero.prop = TRUE,
+  fullParam = FALSE,
+  showFlag = FALSE,
+  nsample = NULL,
+  ...
+)
 }
 \arguments{
 \item{data}{a matrix with nonnegative integers. rows represent the feature (or gene), and

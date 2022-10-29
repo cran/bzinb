@@ -107,7 +107,7 @@ double hfunc(double lb[1], NumericVector &expt, NumericVector &a, double idgam[3
   double result = 0.0;
   double obj;
   
-  if (((expt[4] - lb[0] < 600) & (expt[5] - lb[0] < 600)) & (expt[6] - lb[0] < 600)) {
+  if (((expt[4] - lb[0] < 600) && (expt[5] - lb[0] < 600)) && (expt[6] - lb[0] < 600)) {
     // when everything is not large.
     inv_digamma_vec(lb, expt, a, idgam);
     obj = (log(idgam[0] + idgam[1] + idgam[2]) + lb[0] - log(expt[1] + expt[2] + expt[3]));
